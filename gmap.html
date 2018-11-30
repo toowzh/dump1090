@@ -32,13 +32,12 @@
         color:#333;
       }
     </style>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js">
+    <!-- <script type="text/javascript" src="./jquery-1.8.3.min.js"></script> -->
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js">
     </script>
-    <script type="text/javascript"
-      src="https://maps.googleapis.com/maps/api/js?sensor=true">
-    </script>
+    <script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=PfVUPBMLBIhogM6L5pjjhO7vLyGMhA0o"></script>
     <script type="text/javascript">
-    Map=null;
+    var map=null;
     CenterLat=45.0;
     CenterLon=9.0;
     Planes={};
@@ -53,14 +52,25 @@
 
         if (invalt < 0) invalt = 0;
         b = parseInt(255/maxalt*invalt);
-        return {
-            strokeWeight: (selected ? 2 : 1),
-            path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-            scale: 5,
-            fillColor: 'rgb('+r+','+g+','+b+')',
-            fillOpacity: 0.9,
-            rotation: plane.track
-        };
+        // return {
+        //     strokeWeight: (selected ? 2 : 1),
+        //     path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+        //     scale: 5,
+        //     fillColor: 'rgb('+r+','+g+','+b+')',
+        //     fillOpacity: 0.9,
+        //     rotation: plane.track
+        // };
+        return new BMap.Symbol(
+            // BMap_Symbol_SHAPE_FORWARD_CLOSED_ARROW, 
+            BMap_Symbol_SHAPE_PLANE,
+            {
+                strokeWeight: (selected ? 2 : 1),
+                scale: 1,
+                fillColor: 'rgb('+r+','+g+','+b+')',
+                fillOpacity: 0.9,
+                rotation: plane.track
+            }
+        )   
     }
 
     function selectPlane() {
@@ -109,7 +119,8 @@
                     var myplane = Planes[plane.hex];
                     marker = myplane.marker;
                     var icon = marker.getIcon();
-                    var newpos = new google.maps.LatLng(plane.lat, plane.lon);
+                    // var newpos = new google.maps.LatLng(plane.lat, plane.lon);
+                    var newpos = new BMap.Point(plane.lon, plane.lat);
                     marker.setPosition(newpos);
                     marker.setIcon(getIconForPlane(plane));
                     myplane.altitude = plane.altitude;
@@ -121,17 +132,24 @@
                     if (myplane.hex == Selected)
                         refreshSelectedInfo();
                 } else {
-                    marker = new google.maps.Marker({
-                        position: new google.maps.LatLng(plane.lat, plane.lon),
-                        map: Map,
-                        icon: getIconForPlane(plane)
-                    });
+                    // marker = new google.maps.Marker({
+                    //     position: new google.maps.LatLng(plane.lat, plane.lon),
+                    //     map: Map,
+                    //     icon: getIconForPlane(plane)
+                    // });
+                    marker = new BMap.Marker(
+                        new BMap.Point(plane.lon, plane.lat), 
+                        {icon: getIconForPlane(plane)}
+                    );
                     plane.marker = marker;
                     marker.planehex = plane.hex;
                     Planes[plane.hex] = plane;
 
+                    map.addOverlay(marker); 
+
                     /* Trap clicks for this marker. */
-                    google.maps.event.addListener(marker, 'click', selectPlane);
+                    // google.maps.event.addListener(marker, 'click', selectPlane);
+                    marker.addEventListener("click", selectPlane);
                 }
                 if (plane.flight.length == 0)
                     marker.setTitle(plane.hex)
@@ -151,12 +169,17 @@
     }
 
     function initialize() {
-        var mapOptions = {
-            center: new google.maps.LatLng(CenterLat, CenterLon),
-            zoom: 5,
-            mapTypeId: google.maps.MapTypeId.ROADMAP
-        };
-        Map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+        // var mapOptions = {
+        //     center: new google.maps.LatLng(CenterLat, CenterLon),
+        //     zoom: 5,
+        //     mapTypeId: google.maps.MapTypeId.ROADMAP
+        // };
+        // Map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+        map = new BMap.Map("map_canvas"); 
+
+        var point = new BMap.Point(116.404, 39.915); 
+        map.centerAndZoom(point, 10); 
+        map.enableScrollWheelZoom(true);     
 
         /* Setup our timer to poll from the server. */
         window.setInterval(function() {
